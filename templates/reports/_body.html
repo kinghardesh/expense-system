@@ -1,0 +1,76 @@
+{# Shared on-screen report body: summary cards + category totals + detail table.
+   Expects: summary, expenses. #}
+<div class="row g-3 mb-3">
+    <div class="col-4">
+        <div class="card stat-card"><div class="card-body py-3">
+            <div class="stat-label">Total</div>
+            <div class="stat-value fs-5">{{ summary.total | currency }}</div>
+        </div></div>
+    </div>
+    <div class="col-4">
+        <div class="card stat-card"><div class="card-body py-3">
+            <div class="stat-label">Records</div>
+            <div class="stat-value fs-5">{{ summary.count }}</div>
+        </div></div>
+    </div>
+    <div class="col-4">
+        <div class="card stat-card"><div class="card-body py-3">
+            <div class="stat-label">Average</div>
+            <div class="stat-value fs-5">{{ summary.average | currency }}</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-white"><strong>By Category</strong></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                    {% for r in summary.category_totals %}
+                        <tr>
+                            <td>{{ r.category }}</td>
+                            <td class="text-end fw-semibold">{{ r.total | currency }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th>Total</th>
+                            <th class="text-end">{{ summary.total | currency }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-8">
+        <div class="card h-100">
+            <div class="card-header bg-white"><strong>Detail</strong></div>
+            <div class="card-body p-0">
+                {% if expenses %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr><th>Date</th><th>Category</th><th class="text-end">Amount</th><th>Note</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for e in expenses %}
+                            <tr>
+                                <td class="text-nowrap">{{ e.date.strftime('%d %b %Y') }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ e.category }}</span></td>
+                                <td class="text-end text-nowrap">{{ e.amount | currency }}</td>
+                                <td class="text-muted small">{{ e.note or '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">No records for this report.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

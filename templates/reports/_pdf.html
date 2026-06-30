@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ title }}</title>
+<style>
+  @page { size: A4; margin: 18mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #2b2f36; font-size: 12px; }
+  h1 { color: #2c5f8f; font-size: 20px; margin: 0 0 2px; }
+  .meta { color: #7a8194; font-size: 11px; margin: 0; }
+  .summary { margin: 16px 0; padding: 10px 14px; background: #f4f6f9;
+             border: 1px solid #e0e6ef; border-radius: 6px; }
+  .summary span { margin-right: 18px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #d0d7e2; padding: 5px 8px; text-align: left; }
+  th { background: #2c5f8f; color: #fff; font-size: 11px; }
+  td.num, th.num { text-align: right; }
+  tbody tr:nth-child(even) { background: #f7f9fc; }
+  h2 { font-size: 14px; margin: 18px 0 4px; }
+  .toolbar { margin-bottom: 14px; }
+  @media print { .toolbar { display: none; } body { font-size: 11px; } }
+</style>
+</head>
+<body>
+  {% if printable %}
+  <div class="toolbar">
+    <button onclick="window.print()">🖨 Print / Save as PDF</button>
+    <button onclick="window.history.back()">← Back</button>
+  </div>
+  {% endif %}
+
+  <h1>{{ title }}</h1>
+  {% if subtitle %}<p class="meta">{{ subtitle }}</p>{% endif %}
+  <p class="meta">Generated: {{ generated.strftime('%d %b %Y') }}</p>
+
+  <div class="summary">
+    <span><strong>Total:</strong> ₹{{ '%.2f'|format(summary.total) }}</span>
+    <span><strong>Records:</strong> {{ summary.count }}</span>
+    <span><strong>Average:</strong> ₹{{ '%.2f'|format(summary.average) }}</span>
+  </div>
+
+  <h2>By Category</h2>
+  <table>
+    <thead><tr><th>Category</th><th class="num">Total (₹)</th></tr></thead>
+    <tbody>
+      {% for r in summary.category_totals %}
+      <tr><td>{{ r.category }}</td><td class="num">{{ '%.2f'|format(r.total) }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Expense Detail</h2>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Category</th><th class="num">Amount (₹)</th><th>Note</th></tr>
+    </thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td>{{ e.date.strftime('%d %b %Y') }}</td>
+        <td>{{ e.category }}</td>
+        <td class="num">{{ '%.2f'|format(e.amount) }}</td>
+        <td>{{ e.note or '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" style="text-align:center;color:#7a8194;">No records.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

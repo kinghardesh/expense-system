@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Flask / DB
+instance/
+*.db
+*.sqlite3
+
+# Secrets / env
+.env
+
+# Exports (generated at runtime)
+exports/*
+!exports/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted small mb-0">Overview of school expenditure</p>
+    </div>
+    <a href="{{ url_for('expenses.add') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Expense
+    </a>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">Total Expenditure</div>
+                <div class="stat-value">{{ total | currency }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">Total Records</div>
+                <div class="stat-value">{{ count }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">Categories</div>
+                <div class="stat-value">{{ category_totals | length }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-5">
+        <div class="card h-100">
+            <div class="card-header bg-white"><strong>Spend by Category</strong></div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                {% if total and total > 0 %}
+                <canvas id="categoryChart" height="220"></canvas>
+                {% else %}
+                <div class="text-muted py-5 text-center">No data to chart yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-7">
+        <div class="card h-100">
+            <div class="card-header bg-white"><strong>Monthly Expense (last 12 months)</strong></div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Category breakdown -->
+    <div class="col-12 col-lg-5">
+        <div class="card h-100">
+            <div class="card-header bg-white"><strong>Expense by Category</strong></div>
+            <div class="card-body">
+                {% for row in category_totals %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small">
+                        <span>{{ row.category }}</span>
+                        <span class="fw-semibold">{{ row.total | currency }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        {% set pct = (row.total / total * 100) if total and total > 0 else 0 %}
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {{ pct }}%;"
+                             aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent expenses -->
+    <div class="col-12 col-lg-7">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong>Recent Expenses</strong>
+                <a href="{{ url_for('expenses.activity') }}" class="small">View all</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th class="text-end">Amount</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for e in recent %}
+                            <tr>
+                                <td class="text-nowrap">{{ e.date.strftime('%d %b %Y') }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ e.category }}</span></td>
+                                <td class="text-end text-nowrap">{{ e.amount | currency }}</td>
+                                <td class="text-muted small">{{ e.note or '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    No expenses recorded yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const doughnutData = {{ doughnut | tojson }};
+  const barData = {{ bar | tojson }};
+
+  // Navigate to the report behind whichever slice/bar was clicked.
+  function drillTo(urls) {
+    return function (evt, elements) {
+      if (elements && elements.length) {
+        const url = urls[elements[0].index];
+        if (url) window.location.href = url;
+      }
+    };
+  }
+  // Show a pointer cursor when hovering an interactive element.
+  function pointerOnHover(evt, elements, chart) {
+    chart.canvas.style.cursor = elements.length ? 'pointer' : 'default';
+  }
+
+  const catEl = document.getElementById('categoryChart');
+  if (catEl && doughnutData.data.some(v => v > 0)) {
+    new Chart(catEl, {
+      type: 'doughnut',
+      data: {
+        labels: doughnutData.labels,
+        datasets: [{ data: doughnutData.data, backgroundColor: doughnutData.colors, borderWidth: 1 }]
+      },
+      options: {
+        responsive: true,
+        onClick: drillTo(doughnutData.urls),
+        onHover: pointerOnHover,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { callbacks: { afterLabel: () => 'Click to view category report' } }
+        }
+      }
+    });
+  }
+
+  const barEl = document.getElementById('monthlyChart');
+  if (barEl) {
+    new Chart(barEl, {
+      type: 'bar',
+      data: {
+        labels: barData.labels,
+        datasets: [{ label: 'Expense (₹)', data: barData.data, backgroundColor: '#2c5f8f', borderRadius: 4 }]
+      },
+      options: {
+        responsive: true,
+        onClick: drillTo(barData.urls),
+        onHover: pointerOnHover,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { afterLabel: () => 'Click to view monthly report' } }
+        },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + v.toLocaleString() } } }
+      }
+    });
+  }
+</script>
+{% endblock %}

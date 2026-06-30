@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Activity{% endblock %}
+
+{% macro sort_link(col, label) %}
+  {% set is_active = filter.sort == col %}
+  {% set next_dir = 'asc' if (is_active and filter.direction == 'desc') else ('desc' if is_active else 'asc') %}
+  {% set params = filter.query_params() %}
+  {% set _ = params.update({'sort': col, 'dir': next_dir}) %}
+  <a class="text-decoration-none text-reset" href="{{ url_for('expenses.activity', **params) }}">
+    {{ label }}
+    {% if is_active %}<i class="bi bi-caret-{{ 'up' if filter.direction == 'asc' else 'down' }}-fill small"></i>{% endif %}
+  </a>
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-0">Activity</h1>
+        <p class="text-muted small mb-0">All recorded expenses</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('expenses.export', fmt='excel', **filter.query_params()) }}"
+           class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        <a href="{{ url_for('expenses.export', fmt='pdf', **filter.query_params()) }}"
+           class="btn btn-outline-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        <a href="{{ url_for('expenses.add') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> Add</a>
+    </div>
+</div>
+
+<!-- Filter bar -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" action="{{ url_for('expenses.activity') }}" class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-1">From</label>
+                <input type="date" name="start" value="{{ filter.start or '' }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-1">To</label>
+                <input type="date" name="end" value="{{ filter.end or '' }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Category</label>
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for c in categories %}
+                    <option value="{{ c }}" {{ 'selected' if filter.category == c }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Search note</label>
+                <input type="text" name="q" value="{{ filter.search }}" class="form-control form-control-sm" placeholder="keyword">
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-funnel"></i> Filter</button>
+                {% if filter.is_active() %}
+                <a href="{{ url_for('expenses.activity') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="row g-3 mb-3">
+    <div class="col-4">
+        <div class="card stat-card"><div class="card-body py-3">
+            <div class="stat-label">Total</div>
+            <div class="stat-value fs-5">{{ summary.total | currency }}</div>
+        </div></div>
+    </div>
+    <div class="col-4">
+        <div class="card stat-card"><div class="card-body py-3">
+            <div class="stat-label">Records</div>
+            <div class="stat-value fs-5">{{ summary.count }}</div>
+        </div></div>
+    </div>
+    <div class="col-4">
+        <div class="card stat-card"><div class="card-body py-3">
+            <div class="stat-label">Average</div>
+            <div class="stat-value fs-5">{{ summary.average | currency }}</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if expenses %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>{{ sort_link('date', 'Date') }}</th>
+                        <th>{{ sort_link('category', 'Category') }}</th>
+                        <th class="text-end">{{ sort_link('amount', 'Amount') }}</th>
+                        <th>Note</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for e in expenses %}
+                    <tr>
+                        <td class="text-nowrap">{{ e.date.strftime('%d %b %Y') }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ e.category }}</span></td>
+                        <td class="text-end text-nowrap fw-semibold">{{ e.amount | currency }}</td>
+                        <td class="text-muted small">{{ e.note or '—' }}</td>
+                        <td class="text-end text-nowrap">
+                            <a href="{{ url_for('expenses.edit', expense_id=e.id) }}"
+                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    title="Delete"
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    data-expense-id="{{ e.id }}"
+                                    data-expense-label="{{ e.category }} — {{ e.amount | currency }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            {% if filter.is_active() %}
+                No expenses match these filters.
+                <div class="mt-3"><a href="{{ url_for('expenses.activity') }}" class="btn btn-sm btn-outline-secondary">Clear filters</a></div>
+            {% else %}
+                No expenses recorded yet.
+                <div class="mt-3"><a href="{{ url_for('expenses.add') }}" class="btn btn-sm btn-primary">Add your first expense</a></div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if pagination and pagination.pages > 1 %}
+<nav class="mt-3" aria-label="Expense pages">
+    <ul class="pagination justify-content-center mb-0">
+        {% set base = filter.query_params() %}
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+            {% set _ = base.update({'page': pagination.prev_num}) %}
+            <a class="page-link" href="{{ url_for('expenses.activity', **base) if pagination.has_prev else '#' }}">Previous</a>
+        </li>
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                {% set _ = base.update({'page': p}) %}
+                <li class="page-item {{ 'active' if p == pagination.page }}">
+                    <a class="page-link" href="{{ url_for('expenses.activity', **base) }}">{{ p }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+            {% set _ = base.update({'page': pagination.next_num}) %}
+            <a class="page-link" href="{{ url_for('expenses.activity', **base) if pagination.has_next else '#' }}">Next</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Delete confirmation modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete expense?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete <strong id="deleteLabel"></strong>?
+                This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" class="m-0">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const deleteModal = document.getElementById('deleteModal');
+  if (deleteModal) {
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+      const btn = event.relatedTarget;
+      document.getElementById('deleteForm').action = '/expenses/' + btn.getAttribute('data-expense-id') + '/delete';
+      document.getElementById('deleteLabel').textContent = btn.getAttribute('data-expense-label');
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{# Export + print toolbar. Expects: filter (ExpenseFilter), title (str). #}
+{% set params = filter.query_params() %}
+<div class="d-flex gap-2">
+    <a href="{{ url_for('expenses.export', fmt='excel', **params) }}"
+       class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    <a href="{{ url_for('expenses.export', fmt='pdf', **params) }}"
+       class="btn btn-outline-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+    {% set print_params = filter.query_params() %}
+    {% set _ = print_params.update({'title': title}) %}
+    <a href="{{ url_for('reports.printable', **print_params) }}" target="_blank"
+       class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer"></i> Print</a>
+</div>

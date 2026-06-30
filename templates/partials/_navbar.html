@@ -1,0 +1,30 @@
+<nav class="navbar topbar px-3 px-md-4">
+    <div class="container-fluid p-0">
+        <!-- Mobile menu: collapses sidebar links on small screens -->
+        <button class="btn btn-sm btn-outline-secondary d-md-none" type="button"
+                data-bs-toggle="collapse" data-bs-target="#mobileNav">
+            <i class="bi bi-list"></i>
+        </button>
+        <span class="navbar-brand mb-0 h6 d-md-none">School Expenses</span>
+        <div class="ms-auto d-flex align-items-center gap-3">
+            {% if logged_in %}
+            <span class="text-muted small d-none d-sm-inline">
+                <i class="bi bi-person-circle"></i> {{ admin_username }}
+            </span>
+            <form action="{{ url_for('auth.logout') }}" method="post" class="m-0">
+                <button class="btn btn-sm btn-outline-danger" type="submit">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="collapse d-md-none w-100" id="mobileNav">
+        <div class="list-group list-group-flush mt-2">
+            <a class="list-group-item" href="{{ url_for('expenses.dashboard') }}">Dashboard</a>
+            <a class="list-group-item" href="{{ url_for('expenses.activity') }}">Activity</a>
+            <a class="list-group-item" href="{{ url_for('expenses.add') }}">Add Expense</a>
+            <a class="list-group-item" href="{{ url_for('reports.index') }}">Reports</a>
+        </div>
+    </div>
+</nav>
