@@ -24,3 +24,9 @@ services:
           name: expense-db
           property: connectionString
 
+databases:
+  - name: expense-db
+    plan: free
+    databaseName: expense
+
+
