@@ -1,0 +1,7 @@
+# Vercel deployment config.
+# Pin the entrypoint to wsgi.py: it runs db.create_all() on import, so a fresh
+# serverless instance (and a brand-new Neon database) gets its tables created on
+# the first cold start. Vercel would otherwise auto-pick app.py, which does NOT
+# create tables — every DB query would then 500.
+[tool.vercel]
+entrypoint = "wsgi:app"
